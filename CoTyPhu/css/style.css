@@ -1,0 +1,692 @@
+﻿/* ============================================================
+   style.css — giao diện cho điện thoại (màn hình dọc)
+   ============================================================ */
+
+:root {
+    --bg: #0d1726; /* nền xanh đêm */
+    --panel: #16253d; /* nền các khung */
+    --panel-2: #22365a;
+    --gold: #e0b84a; /* màu nhấn */
+    --tile: #f6f1e3; /* nền ô bàn cờ */
+    --ink: #1b1b1b;
+    --muted: #8d9ab0;
+    --danger: #e5484d;
+    --ok: #2fb561;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    background: var(--bg);
+    color: #eef2f8;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 8px 8px calc(24px + env(safe-area-inset-bottom));
+}
+
+button {
+    font: inherit;
+    cursor: pointer;
+}
+
+/* ---------- Thanh trên cùng ---------- */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+    .topbar .title {
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: var(--gold);
+    }
+
+.link-btn {
+    background: none;
+    border: 1px solid var(--panel-2);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 13px;
+}
+
+/* ============================================================
+   BÀN CỜ: lưới 11 x 11, các ô nằm ở viền ngoài
+   ============================================================ */
+.board {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    grid-template-rows: repeat(11, 1fr);
+    width: 100%;
+    aspect-ratio: 1;
+    gap: 1px;
+    background: #0a121f;
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.tile {
+    background: var(--tile);
+    color: var(--ink);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    cursor: pointer;
+}
+
+    .tile:active {
+        filter: brightness(0.9);
+    }
+
+    .tile .band {
+        width: 100%;
+        height: 24%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1px;
+    }
+
+    .tile .name {
+        font-size: clamp(5.5px, 1.7vw, 9px);
+        line-height: 1.05;
+        font-weight: 700;
+        text-align: center;
+        padding: 1px;
+        word-break: break-word;
+    }
+
+    .tile .price {
+        font-size: clamp(5px, 1.5vw, 8px);
+        color: #555;
+        margin-top: auto;
+        padding-bottom: 1px;
+    }
+
+    .tile .icon {
+        font-size: clamp(10px, 3.6vw, 18px);
+        line-height: 1;
+        margin-top: 10%;
+    }
+
+    .tile .name.long {
+        font-size: clamp(5px, 1.5vw, 8px);
+        letter-spacing: -0.2px;
+    }
+
+    .tile.corner {
+        background: #efe6cc;
+        justify-content: center;
+    }
+
+        .tile.corner .icon {
+            font-size: clamp(12px, 4.2vw, 22px);
+            margin-top: 0;
+        }
+
+        .tile.corner .name {
+            font-size: clamp(5px, 1.5vw, 8px);
+        }
+
+    /* Ô đã có chủ: viền theo màu người sở hữu */
+    .tile.owned::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border: 2.5px solid var(--owner);
+        pointer-events: none;
+    }
+    /* Ô đang thế chấp: sọc xám */
+    .tile.mortgaged {
+        background: repeating-linear-gradient(45deg, #dedad0 0 3px, #c8c3b6 3px 6px);
+    }
+
+/* Nhà và khách sạn trên dải màu */
+.house {
+    width: clamp(3px, 1vw, 6px);
+    height: clamp(3px, 1vw, 6px);
+    background: #2fb561;
+    border: 1px solid #0b5d2a;
+}
+
+.hotel {
+    width: clamp(8px, 2.6vw, 14px);
+    height: clamp(4px, 1.3vw, 7px);
+    background: #e5484d;
+    border: 1px solid #7a1013;
+}
+
+/* Quân cờ */
+.tokens {
+    position: absolute;
+    bottom: 1px;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1px;
+}
+
+.token {
+    width: clamp(7px, 2.5vw, 13px);
+    height: clamp(7px, 2.5vw, 13px);
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+    .token.current {
+        animation: pulse 1s ease-in-out infinite;
+    }
+
+@keyframes pulse {
+    50% {
+        transform: scale(1.3);
+    }
+}
+
+/* ---------- Giữa bàn cờ ---------- */
+.center {
+    grid-area: 2 / 2 / 11 / 11;
+    background: radial-gradient(circle at 50% 40%, #1f3a61, #0d1726 75%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    text-align: center;
+}
+
+.logo {
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--gold);
+    font-size: clamp(18px, 6.5vw, 32px);
+    text-shadow: 0 2px 0 #0008;
+}
+
+.turn-msg {
+    font-size: clamp(12px, 3.6vw, 16px);
+}
+
+    .turn-msg b {
+        color: var(--gold);
+    }
+
+.mini-card {
+    background: #fff;
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: clamp(10px, 3vw, 13px);
+    max-width: 90%;
+}
+
+/* Xúc xắc */
+.dice {
+    display: flex;
+    gap: 10px;
+}
+
+.die {
+    width: clamp(32px, 11vw, 52px);
+    aspect-ratio: 1;
+    background: #fff;
+    border-radius: 18%;
+    display: grid;
+    grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+    padding: 14%;
+    box-shadow: 0 3px 0 #b9b9b9, 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.pip {
+    background: #222;
+    border-radius: 50%;
+    width: 70%;
+    height: 70%;
+    place-self: center;
+}
+
+.dice.rolling .die {
+    animation: shake 0.15s linear infinite;
+}
+
+@keyframes shake {
+    25% {
+        transform: rotate(12deg) translateY(-3px);
+    }
+
+    75% {
+        transform: rotate(-12deg) translateY(2px);
+    }
+}
+
+/* ============================================================
+   KHUNG DƯỚI: người chơi, nút bấm, nhật ký
+   ============================================================ */
+.players {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 6px;
+    margin: 10px 0;
+}
+
+.pchip {
+    background: var(--panel);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    color: inherit;
+}
+
+    .pchip.active {
+        border-color: var(--gold);
+    }
+
+    .pchip.bankrupt {
+        opacity: 0.35;
+    }
+
+    .pchip .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        flex-shrink: 0;
+    }
+
+    .pchip .pname {
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pchip .money {
+        font-weight: 800;
+        font-size: 15px;
+    }
+
+        .pchip .money.neg {
+            color: var(--danger);
+        }
+
+.action-box {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 10px;
+}
+
+    .action-box .hint {
+        font-size: 14px;
+        margin-bottom: 8px;
+        color: #cfd8e6;
+    }
+
+        .action-box .hint.danger {
+            color: #ff9ea1;
+            font-weight: 700;
+        }
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.btn {
+    flex: 1 1 140px;
+    min-height: 50px;
+    border: 0;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    background: var(--gold);
+    color: #1b1b1b;
+    padding: 0 12px;
+}
+
+    .btn:active {
+        transform: translateY(1px);
+        filter: brightness(0.95);
+    }
+
+    .btn.secondary {
+        background: var(--panel-2);
+        color: #fff;
+    }
+
+    .btn.danger {
+        background: var(--danger);
+        color: #fff;
+    }
+
+    .btn.small {
+        flex: 0 0 auto;
+        min-height: 36px;
+        font-size: 13px;
+        border-radius: 9px;
+    }
+
+    .btn.dim {
+        opacity: 0.4;
+    }
+    /* bấm vẫn được: sẽ hiện lý do không làm được */
+    .btn:disabled {
+        opacity: 0.4;
+    }
+
+.log {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+    .log div:first-child {
+        color: #eef2f8;
+    }
+
+/* ============================================================
+   HỘP THOẠI (trượt lên từ dưới)
+   ============================================================ */
+.backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 20;
+    animation: fade 0.15s;
+}
+
+.sheet {
+    position: relative;
+    background: #fff;
+    color: var(--ink);
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 18px 18px 0 0;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    animation: slide 0.2s ease-out;
+}
+
+    .sheet h3 {
+        margin-bottom: 10px;
+    }
+
+    .sheet .close {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        background: none;
+        border: 0;
+        font-size: 22px;
+        color: #888;
+    }
+
+@keyframes fade {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes slide {
+    from {
+        transform: translateY(40px);
+    }
+}
+
+/* Thẻ đất */
+.deed-head {
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    font-weight: 900;
+    font-size: 20px;
+    margin: 8px 0 10px;
+    border: 2px solid #0002;
+}
+
+.deed-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+    .deed-table td {
+        padding: 5px 2px;
+        border-bottom: 1px solid #eee;
+    }
+
+        .deed-table td:last-child {
+            text-align: right;
+            font-weight: 700;
+        }
+
+    .deed-table tr.now td {
+        background: #fff4c7;
+    }
+
+.owner-line {
+    margin: 10px 0;
+    font-size: 15px;
+}
+
+.sheet .actions .btn.secondary {
+    background: #e9edf3;
+    color: var(--ink);
+}
+
+/* Thẻ Cơ Hội / Khí Vận */
+.card-big {
+    border-radius: 14px;
+    padding: 22px 18px;
+    text-align: center;
+    font-size: 18px;
+    line-height: 1.4;
+    margin: 8px 0 14px;
+    border: 3px solid;
+}
+
+    .card-big.chance {
+        background: #fff3e0;
+        border-color: #f7941d;
+    }
+
+    .card-big.chest {
+        background: #e8f4ff;
+        border-color: #0072bb;
+    }
+
+    .card-big .kind {
+        font-weight: 900;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    }
+
+/* Danh sách tài sản */
+.tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.tab {
+    border: 2px solid #ddd;
+    background: #fff;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 14px;
+}
+
+    .tab.active {
+        border-color: var(--ink);
+        font-weight: 800;
+    }
+
+.prop-row {
+    border-left: 8px solid;
+    padding: 8px 0 8px 10px;
+    margin-bottom: 8px;
+    background: #f7f7f7;
+    border-radius: 6px;
+}
+
+    .prop-row .pname {
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .prop-row .actions {
+        gap: 6px;
+    }
+
+/* ============================================================
+   MÀN HÌNH BẮT ĐẦU
+   ============================================================ */
+.setup {
+    padding-top: 6vh;
+    text-align: center;
+}
+
+    .setup .logo {
+        font-size: 40px;
+        margin-bottom: 4px;
+    }
+
+    .setup p {
+        color: var(--muted);
+        margin-bottom: 20px;
+    }
+
+    .setup input {
+        display: block;
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 14px;
+        font-size: 16px;
+        border-radius: 12px;
+        border: 2px solid var(--panel-2);
+        background: var(--panel);
+        color: #fff;
+    }
+
+        .setup input:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+    .setup .btn {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .setup .box {
+        background: var(--panel);
+        border-radius: 16px;
+        padding: 14px;
+        margin-top: 16px;
+        text-align: left;
+    }
+
+        .setup .box h3 {
+            margin-bottom: 10px;
+        }
+
+        .setup .box input {
+            background: var(--bg);
+        }
+
+    .setup .note {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0;
+    }
+
+.join-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+    .join-row input {
+        flex: 1;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        font-weight: 800;
+    }
+
+    .join-row .btn {
+        width: auto;
+        margin: 0;
+        flex: 0 0 auto;
+    }
+
+.room-code {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: 10px;
+    color: var(--gold);
+    margin-bottom: 6px;
+}
+
+.lobby-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 17px;
+}
+
+    .lobby-player .dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+    }
+
+/* Thông báo nhỏ */
+.toast {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #222;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    z-index: 30;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    max-width: 90vw;
+    text-align: center;
+}

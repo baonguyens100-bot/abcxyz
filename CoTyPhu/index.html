@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1726">
+  <title>Cờ Tỷ Phú</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <div id="dialog-root"></div>
+
+  <!-- Thư viện Firebase (bản "compat" dùng được với thẻ script thường) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
+  <!-- THỨ TỰ NẠP RẤT QUAN TRỌNG: dữ liệu trước, logic sau, main.js cuối cùng -->
+  <script src="js/data/board.js"></script>
+  <script src="js/data/cards.js"></script>
+  <script src="js/engine/state.js"></script>
+  <script src="js/engine/rules.js"></script>
+  <script src="js/engine/actions.js"></script>
+  <script src="js/ui/board-view.js"></script>
+  <script src="js/ui/panel-view.js"></script>
+  <script src="js/ui/dialogs.js"></script>
+  <script src="js/net/firebase-config.js"></script>
+  <script src="js/net/room.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
