@@ -5,6 +5,7 @@
 // ============================================================
 
 const BOARD_SIZE = BOARD.length; // 40
+const SEIZE_AFTER_ROUNDS = 6;     // đất thế chấp quá 6 vòng: người khác dừng vào được mua lại
 
 function currentPlayer(state) {
     return state.players[state.current];
@@ -221,7 +222,9 @@ function applyCard(state, card) {
         case "payChosenPlayer": {
             const others = state.players.filter(o => o.id !== p.id && !o.bankrupt);
             if (others.length === 1) {
-                transfer(state, p.id, others[0].id, a.amount); // chỉ còn 1 người thì khỏi chọn
+                // chỉ còn 1 người thì khỏi chọn: trả luôn cho người đó
+                transfer(state, p.id, others[0].id, a.amount);
+                addLog(state, `${p.name} trả ${formatMoney(a.amount)} cho ${others[0].name} (chỉ có 1 người để chọn).`);
             } else {
                 state.phase = "choosePlayer";
                 state.pending = { amount: a.amount };
@@ -268,7 +271,13 @@ function resolveLanding(state, options = {}) {
                 const rent = calcRent(state, tile.id, diceTotal, options);
                 const owner = state.players[info.owner];
                 if (info.mortgaged) {
-                    addLog(state, `${tile.name} đang thế chấp, không phải trả thuê.`);
+                    if (canSeize(state, tile.id, p.id)) {
+                        state.phase = "buy";                // được quyền mua lại đất thế chấp quá hạn
+                        state.pending = { seize: true };
+                        addLog(state, `${tile.name} của ${owner.name} thế chấp quá ${SEIZE_AFTER_ROUNDS} vòng: ${p.name} có thể mua lại!`);
+                    } else {
+                        addLog(state, `${tile.name} đang thế chấp, không phải trả thuê.`);
+                    }
                 } else {
                     transfer(state, p.id, owner.id, rent);
                     addLog(state, `${p.name} trả ${formatMoney(rent)} tiền thuê cho ${owner.name}.`);
@@ -294,9 +303,11 @@ function nextTurn(state) {
         next = (next + 1) % state.players.length;
     } while (state.players[next].bankrupt);
 
+    if (next <= state.current) state.round++;   // quay lại đầu bàn = sang vòng mới
     state.current = next;
     state.turn++;
     state.phase = "roll";
+    state.pending = null;       // lượt mới: không còn việc gì đang chờ
     state.doublesCount = 0;
     state.rolledDouble = false;
     state.lastCard = null;
@@ -360,6 +371,19 @@ function unmortgageError(state, playerId, tileId) {
     return null;
 }
 
+// Đất thế chấp của người khác đã quá SEIZE_AFTER_ROUNDS (6) vòng chưa chuộc -> người đang đứng đó được mua lại
+function canSeize(state, tileId, playerId) {
+    const info = state.tiles[tileId];
+    return !!info && info.mortgaged && info.owner !== null && info.owner !== playerId
+        && state.round - (info.mortgagedRound ?? state.round) >= SEIZE_AFTER_ROUNDS;
+}
+
+// Vòng mà từ đó người khác được mua lại đất thế chấp này
+function seizableFromRound(state, tileId) {
+    const info = state.tiles[tileId];
+    return (info.mortgagedRound ?? state.round) + SEIZE_AFTER_ROUNDS;
+}
+
 // Số tiền tối đa người chơi gom được nếu bán hết nhà và thế chấp hết đất
 function liquidationValue(state, playerId) {
     let value = 0;
@@ -400,35 +424,31 @@ function declareBankrupt(state, playerId) {
     const p = state.players[playerId];
     const creditor = p.owedTo === null || p.owedTo === undefined ? null : state.players[p.owedTo];
 
-    // 1) Bán hết nhà cho ngân hàng (nửa giá) và thế chấp hết đất để gom tiền
+    // 1) Bán hết nhà / khách sạn cho ngân hàng (nửa giá) để gom tiền
     for (const id of ownedTileIds(state, playerId)) {
-        const tile = BOARD[id];
         const info = state.tiles[id];
         if (info.houses > 0) {
-            p.money += (info.houses * COLOR_GROUPS[tile.group].houseCost) / 2;
+            p.money += (info.houses * COLOR_GROUPS[BOARD[id].group].houseCost) / 2;
             info.houses = 0;
-        }
-        if (!info.mortgaged) {
-            p.money += tile.mortgage;
-            info.mortgaged = true;
         }
     }
 
-    // 2) Phần còn thiếu thì chủ nợ không nhận được (người phá sản chỉ trả được chừng đó)
-    const shortfall = -p.money;
-    if (creditor) creditor.money -= shortfall;
+    // 2) Phần tiền còn thiếu thì chủ nợ không nhận được (người phá sản chỉ trả được chừng đó)
+    if (creditor && p.money < 0) creditor.money += p.money;
 
-    // 3) Tài sản còn lại
+    // 3) Đất:
+    //    - Đất đang THẾ CHẤP: luôn thuộc về ngân hàng (xóa thế chấp, thành đất trống)
+    //    - Đất không thế chấp: về chủ nợ nếu nợ người chơi, về ngân hàng nếu nợ ngân hàng
+    const toCreditor = [];
     for (const id of ownedTileIds(state, playerId)) {
         const info = state.tiles[id];
-        if (creditor) {
-            // Nợ người chơi: chủ nợ nhận đất (đang thế chấp) và trả ngân hàng 10% tiền thế chấp
+        if (creditor && !info.mortgaged) {
             info.owner = creditor.id;
-            creditor.money -= BOARD[id].mortgage / 10;
+            toCreditor.push(BOARD[id].name);
         } else {
-            // Nợ ngân hàng: đất trả về ngân hàng, xóa thế chấp
             info.owner = null;
             info.mortgaged = false;
+            info.mortgagedRound = null;
         }
     }
     for (const cardId of p.jailFreeCards) {
@@ -440,7 +460,9 @@ function declareBankrupt(state, playerId) {
     p.money = 0;
     p.inJail = false;
     p.bankrupt = true;
-    addLog(state, `💀 ${p.name} phá sản` + (creditor ? `, toàn bộ tài sản thuộc về ${creditor.name}.` : ", tài sản trả về ngân hàng."));
+    addLog(state, `💀 ${p.name} phá sản.`);
+    if (toCreditor.length) addLog(state, `${creditor.name} nhận: ${toCreditor.join(", ")}.`);
+    addLog(state, "Đất đang thế chấp (nếu có) thuộc về ngân hàng.");
 
     // 4) Còn 1 người thì người đó thắng
     const alive = state.players.filter(pl => !pl.bankrupt);

@@ -127,10 +127,24 @@ function applyAction(oldState, action) {
         case "BUY": {
             requirePhase("buy");
             const tile = BOARD[p.position];
+            const info = state.tiles[tile.id];
             if (p.money < tile.price) throw new Error("Không đủ tiền để mua");
-            changeMoney(state, p.id, -tile.price);
-            state.tiles[tile.id].owner = p.id;
-            addLog(state, `${p.name} mua ${tile.name} với giá ${formatMoney(tile.price)}.`);
+            if (state.pending && state.pending.seize) {
+                // Mua lại đất thế chấp quá hạn của người khác: trả đủ giá đất cho ngân hàng
+                if (!canSeize(state, tile.id, p.id)) throw new Error("Không mua lại được ô này");
+                const oldOwner = state.players[info.owner];
+                changeMoney(state, p.id, -tile.price);
+                info.owner = p.id;
+                info.mortgaged = false;
+                info.mortgagedRound = null;
+                addLog(state, `${p.name} mua lại ${tile.name} (đang thế chấp của ${oldOwner.name}) với giá ${formatMoney(tile.price)}.`);
+            } else {
+                if (info.owner !== null) throw new Error("Ô này đã có chủ");
+                changeMoney(state, p.id, -tile.price);
+                info.owner = p.id;
+                addLog(state, `${p.name} mua ${tile.name} với giá ${formatMoney(tile.price)}.`);
+            }
+            state.pending = null;
             finishStep(state);
             break;
         }
@@ -138,6 +152,7 @@ function applyAction(oldState, action) {
         case "DECLINE":
             requirePhase("buy");
             addLog(state, `${p.name} không mua ${BOARD[p.position].name}.`);
+            state.pending = null;
             finishStep(state);
             break;
 
@@ -187,6 +202,7 @@ function applyAction(oldState, action) {
             check(mortgageError(state, actor.id, action.tileId));
             const tile = BOARD[action.tileId];
             state.tiles[action.tileId].mortgaged = true;
+            state.tiles[action.tileId].mortgagedRound = state.round;
             changeMoney(state, actor.id, tile.mortgage);
             addLog(state, `${actor.name} thế chấp ${tile.name}, nhận ${formatMoney(tile.mortgage)}.`);
             break;
@@ -196,6 +212,7 @@ function applyAction(oldState, action) {
             check(unmortgageError(state, actor.id, action.tileId));
             const tile = BOARD[action.tileId];
             state.tiles[action.tileId].mortgaged = false;
+            state.tiles[action.tileId].mortgagedRound = null;
             changeMoney(state, actor.id, -tile.unmortgage);
             addLog(state, `${actor.name} chuộc ${tile.name}, trả ${formatMoney(tile.unmortgage)}.`);
             break;

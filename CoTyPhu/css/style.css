@@ -28,9 +28,9 @@ html, body {
 }
 
 #app {
-    max-width: 520px;
+    max-width: 560px;
     margin: 0 auto;
-    padding: 8px 8px calc(24px + env(safe-area-inset-bottom));
+    padding: 8px 8px calc(84px + env(safe-area-inset-bottom)); /* chừa chỗ cho nút nhật ký */
 }
 
 button {
@@ -62,19 +62,22 @@ button {
 }
 
 /* ============================================================
-   BÀN CỜ: lưới 11 x 11, các ô nằm ở viền ngoài
+   BÀN CỜ: lưới 13 x 13
+   - hàng/cột ngoài cùng: đường đi của quân cờ (mỏng)
+   - hàng/cột kế tiếp: các ô (sâu hơn bề ngang, góc to)
    ============================================================ */
 .board {
+    --lane: 0.55fr;
+    --depth: 1.7fr;
     display: grid;
-    grid-template-columns: repeat(11, 1fr);
-    grid-template-rows: repeat(11, 1fr);
+    grid-template-columns: var(--lane) var(--depth) repeat(9, 1fr) var(--depth) var(--lane);
+    grid-template-rows: var(--lane) var(--depth) repeat(9, 1fr) var(--depth) var(--lane);
     width: 100%;
     aspect-ratio: 1;
-    gap: 1px;
+    container-type: inline-size; /* chữ trong bàn cờ co giãn theo bề rộng bàn cờ (đơn vị cqw) */
     background: #0a121f;
-    border: 2px solid var(--gold);
-    border-radius: 6px;
-    overflow: hidden;
+    border-radius: 8px;
+    position: relative;
 }
 
 .tile {
@@ -82,21 +85,40 @@ button {
     color: var(--ink);
     position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     overflow: hidden;
     min-width: 0;
     min-height: 0;
     cursor: pointer;
+    box-shadow: 0 0 0 0.5px #0a121f; /* đường kẻ giữa các ô */
 }
 
     .tile:active {
         filter: brightness(0.9);
     }
 
+    /* Hướng của ô: dải màu luôn quay vào trong bàn cờ */
+    .tile.side-bottom {
+        flex-direction: column;
+    }
+
+    .tile.side-top {
+        flex-direction: column-reverse;
+    }
+
+    .tile.side-left {
+        flex-direction: row-reverse;
+    }
+
+    .tile.side-right {
+        flex-direction: row;
+    }
+
+    .tile.side-corner {
+        flex-direction: column;
+        background: #efe6cc;
+    }
+
     .tile .band {
-        width: 100%;
-        height: 24%;
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -104,98 +126,174 @@ button {
         gap: 1px;
     }
 
-    .tile .name {
-        font-size: clamp(5.5px, 1.7vw, 9px);
-        line-height: 1.05;
-        font-weight: 700;
-        text-align: center;
-        padding: 1px;
-        word-break: break-word;
+.side-bottom .band, .side-top .band {
+    height: 20%;
+    width: 100%;
+}
+
+.side-left .band, .side-right .band {
+    width: 20%;
+    height: 100%;
+    flex-direction: column;
+}
+
+.tile .body {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 1px;
+    text-align: center;
+}
+
+.tile .name {
+    font-size: clamp(5.5px, 1.6cqw, 9px);
+    line-height: 1.05;
+    font-weight: 700;
+    word-break: break-word;
+}
+/* Ô cạnh trên/dưới hẹp: tên dài thì chữ nhỏ lại, không ngắt giữa từ */
+.side-top .name, .side-bottom .name {
+    word-break: normal;
+    overflow-wrap: normal;
+}
+
+    .side-top .name.len-m, .side-bottom .name.len-m {
+        font-size: clamp(5px, 1.4cqw, 8px);
     }
 
-    .tile .price {
-        font-size: clamp(5px, 1.5vw, 8px);
-        color: #555;
-        margin-top: auto;
-        padding-bottom: 1px;
-    }
-
-    .tile .icon {
-        font-size: clamp(10px, 3.6vw, 18px);
-        line-height: 1;
-        margin-top: 10%;
-    }
-
-    .tile .name.long {
-        font-size: clamp(5px, 1.5vw, 8px);
+    .side-top .name.len-l, .side-bottom .name.len-l {
+        font-size: clamp(4.5px, 1.15cqw, 7px);
         letter-spacing: -0.2px;
     }
 
-    .tile.corner {
-        background: #efe6cc;
-        justify-content: center;
-    }
+.tile .price {
+    font-size: clamp(5px, 1.5cqw, 8.5px);
+    color: #555;
+}
 
-        .tile.corner .icon {
-            font-size: clamp(12px, 4.2vw, 22px);
-            margin-top: 0;
-        }
+.tile .icon {
+    font-size: clamp(10px, 3.4cqw, 18px);
+    line-height: 1;
+}
 
-        .tile.corner .name {
-            font-size: clamp(5px, 1.5vw, 8px);
-        }
+.side-corner .body {
+    justify-content: center;
+    gap: 2px;
+}
 
-    /* Ô đã có chủ: viền theo màu người sở hữu */
-    .tile.owned::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border: 2.5px solid var(--owner);
-        pointer-events: none;
-    }
-    /* Ô đang thế chấp: sọc xám */
-    .tile.mortgaged {
-        background: repeating-linear-gradient(45deg, #dedad0 0 3px, #c8c3b6 3px 6px);
-    }
+.side-corner .icon {
+    font-size: clamp(14px, 5cqw, 26px);
+}
 
-/* Nhà và khách sạn trên dải màu */
+/* Ngôi nhà màu người sở hữu, ở giữa ô */
+.tile .owner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.owner-house {
+    width: clamp(12px, 4.2cqw, 22px);
+    height: clamp(12px, 4.2cqw, 22px);
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+/* Ô người chơi hiện tại đang đứng */
+.tile.here {
+    box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 0.5px #0a121f;
+}
+
+/* Đất đang thế chấp: xám + con dấu đỏ */
+.tile.mortgaged .body, .tile.mortgaged .band {
+    opacity: 0.45;
+}
+
+.tile.mortgaged {
+    background: repeating-linear-gradient(45deg, #e4e0d6 0 3px, #d3cec2 3px 6px);
+}
+
+.stamp {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: clamp(4.5px, 1.35cqw, 8px);
+    font-weight: 900;
+    color: #d61f26;
+    border: 1.5px solid #d61f26;
+    border-radius: 3px;
+    padding: 1px 2px;
+    background: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.side-left .stamp, .side-right .stamp {
+    transform: translate(-50%, -50%) rotate(-15deg);
+}
+
+/* Nhà và khách sạn đã xây (trên dải màu) */
 .house {
-    width: clamp(3px, 1vw, 6px);
-    height: clamp(3px, 1vw, 6px);
+    width: clamp(3px, 1cqw, 6px);
+    height: clamp(3px, 1cqw, 6px);
     background: #2fb561;
     border: 1px solid #0b5d2a;
 }
 
 .hotel {
-    width: clamp(8px, 2.6vw, 14px);
-    height: clamp(4px, 1.3vw, 7px);
+    width: clamp(8px, 2.6cqw, 14px);
+    height: clamp(4px, 1.3cqw, 7px);
     background: #e5484d;
     border: 1px solid #7a1013;
 }
 
-/* Quân cờ */
-.tokens {
-    position: absolute;
-    bottom: 1px;
-    left: 0;
-    right: 0;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1px;
+.side-left .hotel, .side-right .hotel {
+    width: clamp(4px, 1.3cqw, 7px);
+    height: clamp(8px, 2.6cqw, 14px);
 }
+
+/* ---------- Đường đi và quân cờ (viền ngoài) ---------- */
+.lane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1px;
+    min-width: 0;
+    min-height: 0;
+    z-index: 2;
+}
+
+    .lane.vertical {
+        flex-direction: column;
+    }
 
 .token {
-    width: clamp(7px, 2.5vw, 13px);
-    height: clamp(7px, 2.5vw, 13px);
+    width: clamp(8px, 2.6cqw, 14px);
+    height: clamp(8px, 2.6cqw, 14px);
     border-radius: 50%;
     border: 1.5px solid #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    flex-shrink: 0;
 }
 
-    .token.current {
-        animation: pulse 1s ease-in-out infinite;
-    }
+.lane .token + .token {
+    margin-left: -3px;
+}
+
+.lane.vertical .token + .token {
+    margin-left: 0;
+    margin-top: -3px;
+}
+
+.token.current {
+    animation: pulse 1s ease-in-out infinite;
+    z-index: 1;
+}
 
 @keyframes pulse {
     50% {
@@ -205,50 +303,52 @@ button {
 
 /* ---------- Giữa bàn cờ ---------- */
 .center {
-    grid-area: 2 / 2 / 11 / 11;
+    grid-area: 3 / 3 / 12 / 12;
     background: radial-gradient(circle at 50% 40%, #1f3a61, #0d1726 75%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 8px;
+    gap: 2cqw;
+    padding: 2cqw;
     text-align: center;
 }
 
 .logo {
     font-weight: 900;
-    letter-spacing: 3px;
+    letter-spacing: 0.6cqw;
     color: var(--gold);
-    font-size: clamp(18px, 6.5vw, 32px);
+    font-size: 5.6cqw;
     text-shadow: 0 2px 0 #0008;
 }
 
-.turn-msg {
-    font-size: clamp(12px, 3.6vw, 16px);
+.round {
+    font-size: 2.8cqw;
+    color: var(--muted);
+    margin-top: -1cqw;
 }
 
-    .turn-msg b {
-        color: var(--gold);
-    }
+.turn-msg {
+    font-size: 3.4cqw;
+}
 
 .mini-card {
     background: #fff;
     color: var(--ink);
     border-radius: 8px;
-    padding: 6px 8px;
-    font-size: clamp(10px, 3vw, 13px);
-    max-width: 90%;
+    padding: 1.5cqw 2cqw;
+    font-size: 2.8cqw;
+    max-width: 95%;
 }
 
 /* Xúc xắc */
 .dice {
     display: flex;
-    gap: 10px;
+    gap: 2.5cqw;
 }
 
 .die {
-    width: clamp(32px, 11vw, 52px);
+    width: 11cqw;
     aspect-ratio: 1;
     background: #fff;
     border-radius: 18%;
@@ -399,16 +499,310 @@ button {
         opacity: 0.4;
     }
 
-.log {
+/* Thông tin ô người chơi đang đứng (chỗ nhật ký cũ) */
+.info-box {
     margin-top: 10px;
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.5;
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 10px 12px;
+    border-left: 6px solid var(--band, #8d9ab0);
 }
 
-    .log div:first-child {
-        color: #eef2f8;
+    .info-box .info-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 800;
+        font-size: 16px;
     }
+
+        .info-box .info-title small {
+            font-weight: 400;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+    .info-box .info-line {
+        margin-top: 6px;
+        font-size: 14px;
+        color: #cfd8e6;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+        .info-box .info-line .owner-house {
+            width: 18px;
+            height: 18px;
+        }
+
+.rent-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.rent-chip {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 3px 7px;
+    font-size: 12px;
+    color: #cfd8e6;
+}
+
+    .rent-chip b {
+        color: #fff;
+    }
+
+    .rent-chip.now {
+        background: var(--gold);
+        color: #1b1b1b;
+    }
+
+        .rent-chip.now b {
+            color: #1b1b1b;
+        }
+
+.badge-mortgage {
+    background: #d0021b;
+    color: #fff;
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+/* Nút nhật ký nổi ở góc dưới phải */
+#log-fab {
+    position: fixed;
+    right: max(14px, calc((100vw - 520px) / 2 + 14px));
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    z-index: 15;
+}
+
+    #log-fab .fab-btn {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        border: 2px solid var(--gold);
+        background: var(--panel);
+        color: #fff;
+        font-size: 22px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+        position: relative;
+    }
+
+        #log-fab .fab-btn .dot-new {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: var(--danger);
+            border: 2px solid var(--panel);
+        }
+
+    #log-fab .log-pop {
+        position: absolute;
+        right: 0;
+        bottom: 64px;
+        width: min(330px, calc(100vw - 28px));
+        max-height: 55vh;
+        overflow-y: auto;
+        background: #fff;
+        color: var(--ink);
+        border-radius: 14px;
+        padding: 10px 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        animation: slide 0.15s ease-out;
+    }
+
+        #log-fab .log-pop h4 {
+            margin-bottom: 6px;
+        }
+
+        #log-fab .log-pop ol {
+            padding-left: 0;
+            list-style: none;
+        }
+
+        #log-fab .log-pop li {
+            font-size: 14px;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+            line-height: 1.35;
+        }
+
+            #log-fab .log-pop li:first-child {
+                font-weight: 700;
+            }
+
+            #log-fab .log-pop li:last-child {
+                border-bottom: 0;
+            }
+
+/* ---------- Mua lại đất thế chấp ---------- */
+.redeem {
+    margin-top: 10px;
+    border-top: 1px solid var(--panel-2);
+    padding-top: 8px;
+}
+
+.redeem-title {
+    font-size: 13px;
+    color: #ffcf8a;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.redeem-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+    .redeem-list .btn {
+        font-weight: 700;
+    }
+
+.chip-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: -1px;
+    border: 1px solid #0006;
+}
+
+/* ---------- Khung thông tin ô (markup: .info-box > .info-title + .info-card) ---------- */
+.info-box {
+    background: none;
+    border-left: 0;
+    padding: 0;
+    margin-top: 10px;
+}
+
+    .info-box .info-title {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0 0 6px 2px;
+        font-weight: 700;
+        display: block;
+    }
+
+        .info-box .info-title small {
+            font-weight: 400;
+            font-size: 12px;
+        }
+
+.info-card {
+    background: #fff;
+    color: var(--ink);
+    border-radius: 14px;
+    padding: 4px 12px 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+    .info-card h3 {
+        margin: 10px 0 6px;
+    }
+
+    .info-card .deed-head {
+        font-size: 17px;
+        padding: 8px;
+        margin: 8px 0 6px;
+    }
+
+    .info-card .deed-table {
+        font-size: 13px;
+    }
+
+        .info-card .deed-table td {
+            padding: 4px 2px;
+        }
+
+    .info-card .actions .btn.secondary {
+        background: #e9edf3;
+        color: var(--ink);
+    }
+
+.mortgage-note {
+    font-size: 13px;
+    background: #fff0f0;
+    color: #7a1013;
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin: 6px 0;
+}
+
+/* ---------- Nút nhật ký nổi (góc dưới phải) ---------- */
+.log-fab {
+    position: fixed;
+    right: max(14px, calc((100vw - 560px) / 2 + 14px));
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    background: var(--panel-2);
+    color: #fff;
+    font-size: 22px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    z-index: 15;
+}
+
+    .log-fab.open {
+        background: var(--gold);
+        color: #1b1b1b;
+        font-weight: 900;
+    }
+
+.log-pop {
+    position: fixed;
+    right: max(14px, calc((100vw - 560px) / 2 + 14px));
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    width: min(340px, calc(100vw - 28px));
+    max-height: 55vh;
+    overflow-y: auto;
+    background: #fff;
+    color: var(--ink);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 15;
+    animation: fade 0.15s;
+}
+
+.log-title {
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+
+    .log-title small {
+        font-weight: 400;
+        color: #777;
+    }
+
+.log-line {
+    font-size: 13px;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+    line-height: 1.35;
+}
+
+.log-title + .log-line {
+    font-weight: 700;
+}
+
+.log-line:last-child {
+    border-bottom: 0;
+}
 
 /* ============================================================
    HỘP THOẠI (trượt lên từ dưới)

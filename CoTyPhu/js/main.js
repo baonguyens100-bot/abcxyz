@@ -16,7 +16,8 @@ let room = null;           // dữ liệu phòng online mới nhất
 let myId = null;           // null = chơi 1 máy (ai cũng bấm được); số = ghế của máy này
 let busy = false;          // đang diễn hoạt cảnh -> tạm khóa nút
 let sending = false;       // đang gửi hành động lên Firebase
-let showAllLog = false;
+let logOpen = false;        // hộp nhật ký đang mở?
+let infoTile = null;       // ô đang xem thông tin (null = ô người đang tới lượt đứng)
 let lastAnimatedMove = 0;  // id nước đi đã diễn hoạt cảnh
 let stateQueue = Promise.resolve();
 
@@ -52,17 +53,24 @@ function renderGame() {
         <span style="display:flex;gap:8px;align-items:center">${right}</span>
       </div>
       <div id="board-wrap"></div>
-      <div id="panel"></div>`;
+      <div id="panel"></div>
+      <div id="log-root"></div>`;
     }
     renderBoard(state, document.getElementById("board-wrap"));
     const canAct = !busy && (myId === null || myId === state.current);
-    renderPanel(state, document.getElementById("panel"), { canAct, showAllLog });
+    renderPanel(state, document.getElementById("panel"), { canAct, infoTile });
+    renderLog();
     Dialog.refresh();
 }
 
+function renderLog() {
+    const root = document.getElementById("log-root");
+    if (root && state) root.innerHTML = logFabHtml(state, logOpen);
+}
+
 function toggleLog() {
-    showAllLog = !showAllLog;
-    renderGame();
+    logOpen = !logOpen;
+    renderLog();
 }
 
 // ============================================================
@@ -113,6 +121,12 @@ async function applyState(newState) {
     const move = state.lastMove;
     if (!prev) lastAnimatedMove = move ? move.id : 0;   // mới vào: không diễn lại nước cũ
 
+    // Có nước đi mới hoặc đổi lượt: khung thông tin quay về ô người đang tới lượt đứng
+    if (!prev || prev.current !== state.current || (move && move.id !== lastAnimatedMove)
+        || currentPlayer(prev).position !== currentPlayer(state).position) {
+        infoTile = null;
+    }
+
     // Quân cờ nhảy từng ô
     if (move && move.id !== lastAnimatedMove && document.getElementById("board-wrap")) {
         lastAnimatedMove = move.id;
@@ -129,7 +143,9 @@ async function applyState(newState) {
     if (!prev) return;
 
     // Hộp thoại tự bật
-    if (state.lastCard && state.lastCard !== prev.lastCard) {
+    // Thẻ Cơ Hội / Khí Vận: chỉ bật lên ở máy của người rút thẻ
+    // (máy khác vẫn thấy thẻ nhỏ ở giữa bàn cờ và trong nhật ký)
+    if (state.lastCard && state.lastCard !== prev.lastCard && canManage(state.current)) {
         const card = findCard(state.lastCard);   // giữ lại thẻ, vì state.lastCard sẽ đổi ở lượt sau
         Dialog.open(() => cardDialogHtml(card));
     } else if (state.phase === "debt" && prev.phase !== "debt" && canManage(state.pending.debtorId)) {
@@ -143,7 +159,7 @@ async function applyState(newState) {
 async function doRoll() {
     if (busy || sending) return;
     busy = true;
-    renderPanel(state, document.getElementById("panel"), { canAct: false, showAllLog });
+    renderPanel(state, document.getElementById("panel"), { canAct: false, infoTile });
 
     const diceEl = document.getElementById("dice");
     diceEl.classList.add("rolling");
@@ -163,9 +179,14 @@ async function doRoll() {
 // ============================================================
 // HỘP THOẠI
 // ============================================================
+// Chạm vào 1 ô trên bàn cờ (hoặc tên đất trong danh sách tài sản): hiện thông tin ở khung dưới
 function onTileClick(tileId) {
     if (!state || busy) return;
-    Dialog.open(() => tileDialogHtml(state, tileId));
+    infoTile = tileId;
+    Dialog.close();
+    renderGame();
+    const box = document.getElementById("info-box");
+    if (box) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function openProperties(playerId) {

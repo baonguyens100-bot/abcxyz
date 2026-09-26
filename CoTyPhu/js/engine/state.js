@@ -40,10 +40,11 @@ function createGame(playerNames) {
 
     // ---- Tình trạng từng ô mua được (đất, ga, công ty) ----
     // houses: 0–4 là số nhà, 5 = khách sạn
+    // mortgagedRound: thế chấp từ vòng thứ mấy (để tính luật "sau 6 vòng người khác được mua lại")
     const tiles = {};
     for (const tile of BOARD) {
         if (tile.price) {
-            tiles[tile.id] = { owner: null, houses: 0, mortgaged: false };
+            tiles[tile.id] = { owner: null, houses: 0, mortgaged: false, mortgagedRound: null };
         }
     }
 
@@ -51,6 +52,7 @@ function createGame(playerNames) {
         players: players,
         current: 0,              // tới lượt người chơi số mấy
         turn: 1,                 // lượt thứ mấy của cả ván
+        round: 1,                // vòng thứ mấy (mỗi khi tất cả đã đi 1 lượt thì +1)
         phase: "roll",           // đang chờ làm gì (xem danh sách ở dưới)
         dice: [0, 0],            // kết quả xúc xắc lần gần nhất
         doublesCount: 0,         // đã đổ đôi mấy lần liên tiếp trong lượt này
@@ -71,6 +73,7 @@ function createGame(playerNames) {
 // Các giá trị của state.phase:
 //   "roll"          : người chơi hiện tại cần tung xúc xắc (nếu ở tù: có thể nộp phạt / dùng thẻ)
 //   "buy"           : vừa dừng ở ô chưa có chủ -> Mua hoặc Bỏ qua
+//                     (state.pending = { seize: true } nếu là mua lại đất thế chấp quá 6 vòng của người khác)
 //   "choosePlayer"  : thẻ bắt chọn 1 người để trả tiền
 //   "endTurn"       : đã xong, chờ bấm Kết thúc lượt
 //   "debt"          : có người bị âm tiền -> người đó phải bán nhà / thế chấp / tuyên bố phá sản

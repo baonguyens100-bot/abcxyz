@@ -58,7 +58,7 @@ function normalizeState(raw) {
     for (const tile of BOARD) {
         if (!tile.price) continue;
         const t = (s.tiles && s.tiles[tile.id]) || {};
-        tiles[tile.id] = { owner: t.owner ?? null, houses: t.houses || 0, mortgaged: !!t.mortgaged };
+        tiles[tile.id] = { owner: t.owner ?? null, houses: t.houses || 0, mortgaged: !!t.mortgaged, mortgagedRound: t.mortgagedRound ?? null };
     }
     s.tiles = tiles;
 
@@ -69,6 +69,7 @@ function normalizeState(raw) {
     s.dice = s.dice ? Object.values(s.dice) : [0, 0];
     s.log = s.log ? Object.values(s.log) : [];
     s.current = s.current || 0;
+    s.round = s.round || 1;
     s.doublesCount = s.doublesCount || 0;
     s.rolledDouble = !!s.rolledDouble;
     s.lastCard = s.lastCard ?? null;

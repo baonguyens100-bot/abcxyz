@@ -84,8 +84,15 @@ function tileDialogHtml(state, tileId) {
         html += `<div class="owner-line">Chưa có chủ · Giá <b>${formatMoney(tile.price)}</b></div>`;
     } else {
         const owner = state.players[info.owner];
-        html += `<div class="owner-line">Chủ: <b style="color:${owner.color}">● ${owner.name}</b>
-      ${info.mortgaged ? " · <b>đang thế chấp</b>" : ""}</div>`;
+        html += `<div class="owner-line">Chủ: <b style="color:${owner.color}">● ${escapeHtml(owner.name)}</b>
+      ${info.mortgaged ? " · <b style='color:#d61f26'>đang thế chấp</b>" : ""}</div>`;
+        if (info.mortgaged) {
+            const from = seizableFromRound(state, tileId);
+            html += `<div class="mortgage-note">Thế chấp từ vòng ${info.mortgagedRound ?? "?"}. ` +
+                (state.round >= from
+                    ? `<b>Đã quá ${SEIZE_AFTER_ROUNDS} vòng:</b> người khác dừng vào ô này có thể mua lại với giá ${formatMoney(tile.price)}.`
+                    : `Nếu chưa chuộc, từ <b>vòng ${from}</b> người khác dừng vào có thể mua lại.`) + "</div>";
+        }
         if (canManage(owner.id)) html += `<div class="actions">${manageButtons(state, owner.id, tileId)}</div>`;
     }
     return html;
