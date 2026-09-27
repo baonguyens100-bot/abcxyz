@@ -59,7 +59,7 @@ function actionsHtml(state, canAct) {
                 + btn(`Nộp ${formatMoney(GAME_CONFIG.jailFine)}`, "act('PAY_JAIL')", { cls: "secondary" });
             if (p.jailFreeCards.length) buttons += btn("🎫 Dùng thẻ ra tù", "act('USE_JAIL_CARD')", { cls: "secondary" });
         } else {
-            hint = state.rolledDouble ? "Đổ đôi! Bạn được tung tiếp." : `${escapeHtml(p.name)}, tới lượt bạn.`;
+            hint = `${escapeHtml(p.name)}, tới lượt bạn. Tung xúc xắc xong mới được xây nhà (tối đa ${GAME_CONFIG.maxBuildsPerTurn} lần).`;
             buttons = btn("🎲 Tung xúc xắc", "doRoll()");
         }
     } else if (state.phase === "buy") {
@@ -82,7 +82,10 @@ function actionsHtml(state, canAct) {
             }
         }
     } else if (state.phase === "endTurn") {
-        hint = "Xây nhà hoặc thế chấp trước khi kết thúc nếu cần.";
+        const left = GAME_CONFIG.maxBuildsPerTurn - (state.buildsThisTurn || 0);
+        hint = left > 0
+            ? `Bạn còn ${left} lần xây nhà trong lượt này. Xây hoặc thế chấp trước khi kết thúc nếu cần.`
+            : `Bạn đã xây đủ ${GAME_CONFIG.maxBuildsPerTurn} lần trong lượt này.`;
         buttons = btn("Kết thúc lượt ➜", "act('END_TURN')");
     }
 

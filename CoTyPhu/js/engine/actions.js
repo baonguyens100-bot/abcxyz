@@ -11,7 +11,7 @@
 // ============================================================
 
 // Hành động THEO LƯỢT (chỉ người đang tới lượt được làm):
-//   ROLL            tung xúc xắc                       { dice?: [a, b] } (dice chỉ dùng khi test)
+//   ROLL            tung xúc xắc — mỗi lượt 1 lần       { dice?: [a, b] } (dice chỉ dùng khi test)
 //   PAY_JAIL        nộp 500K để ra tù
 //   USE_JAIL_CARD   dùng thẻ Ra tù miễn phí
 //   BUY             mua ô đang đứng
@@ -66,6 +66,7 @@ function applyAction(oldState, action) {
             const total = dice[0] + dice[1];
             const isDouble = dice[0] === dice[1];
             state.dice = dice;
+            state.hasRolled = true;
             state.lastCard = null;
             addLog(state, `${p.name} tung được ${dice[0]} + ${dice[1]} = ${total}${isDouble ? " (đôi!)" : ""}.`);
 
@@ -85,16 +86,9 @@ function applyAction(oldState, action) {
                 }
                 state.rolledDouble = false; // ra tù bằng đôi thì không được tung thêm
             } else {
-                state.rolledDouble = isDouble;
-                if (isDouble) {
-                    state.doublesCount++;
-                    if (state.doublesCount === 3) {
-                        addLog(state, `${p.name} đổ đôi 3 lần liên tiếp!`);
-                        sendToJail(state, p.id);
-                        state.phase = "endTurn";
-                        break;
-                    }
-                }
+                // Luật riêng: mỗi lượt chỉ tung 1 lần, đổ đôi KHÔNG được tung thêm
+                // (đổ đôi chỉ còn tác dụng để ra tù)
+                state.rolledDouble = false;
             }
 
             state.phase = "moving";
@@ -182,7 +176,14 @@ function applyAction(oldState, action) {
             const cost = COLOR_GROUPS[tile.group].houseCost;
             changeMoney(state, actor.id, -cost);
             info.houses++;
+            state.buildsThisTurn = (state.buildsThisTurn || 0) + 1;
             addLog(state, `${actor.name} xây ${info.houses === 5 ? "khách sạn" : "nhà thứ " + info.houses} ở ${tile.name} (${formatMoney(cost)}).`);
+            // Đã xây thì không được tung xúc xắc nữa (kể cả đang có lượt tung thêm do đổ đôi)
+            if (state.phase === "roll") {
+                state.phase = "endTurn";
+                state.rolledDouble = false;
+                addLog(state, `${actor.name} đã xây nhà nên không được tung tiếp lượt này.`);
+            }
             break;
         }
 

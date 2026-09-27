@@ -57,6 +57,8 @@ function createGame(playerNames) {
         dice: [0, 0],            // kết quả xúc xắc lần gần nhất
         doublesCount: 0,         // đã đổ đôi mấy lần liên tiếp trong lượt này
         rolledDouble: false,     // lần tung vừa rồi có phải đôi không
+        hasRolled: false,        // lượt này đã tung xúc xắc chưa (phải tung rồi mới được xây)
+        buildsThisTurn: 0,       // lượt này đã xây mấy lần (tối đa GAME_CONFIG.maxBuildsPerTurn)
         tiles: tiles,
         decks: {
             chance: shuffle(CHANCE_CARDS.map(c => c.id)),

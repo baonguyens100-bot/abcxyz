@@ -310,6 +310,8 @@ function nextTurn(state) {
     state.pending = null;       // lượt mới: không còn việc gì đang chờ
     state.doublesCount = 0;
     state.rolledDouble = false;
+    state.hasRolled = false;
+    state.buildsThisTurn = 0;
     state.lastCard = null;
     addLog(state, `— Tới lượt ${state.players[next].name} —`);
 }
@@ -330,6 +332,13 @@ function buildError(state, playerId, tileId) {
     if (!info || tile.type !== "street") return "Chỉ xây được trên đất có màu";
     if (info.owner !== playerId) return "Đây không phải đất của bạn";
     if (!hasColourSet(state, playerId, tile.group)) return "Cần có đủ bộ màu mới được xây";
+    // Luật xây theo lượt (chống người giàu xây dồn dập)
+    if (state.current !== playerId) return "Chỉ được xây trong lượt của mình";
+    if (!state.hasRolled) return "Tung xúc xắc trước rồi mới được xây";
+    if (state.phase !== "roll" && state.phase !== "endTurn") return "Xong bước hiện tại rồi mới xây được";
+    if ((state.buildsThisTurn || 0) >= GAME_CONFIG.maxBuildsPerTurn) {
+        return `Mỗi lượt chỉ được xây tối đa ${GAME_CONFIG.maxBuildsPerTurn} lần`;
+    }
     const group = groupTileIds(tile.group);
     if (group.some(id => state.tiles[id].mortgaged)) return "Có đất trong bộ màu đang thế chấp";
     if (info.houses >= 5) return "Đã có khách sạn";

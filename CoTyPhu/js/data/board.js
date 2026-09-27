@@ -17,6 +17,7 @@ const GAME_CONFIG = {
     auctionStart: 100_000,    // đấu giá bắt đầu từ 100K
     auctionStep: 10_000,      // mỗi lần trả giá tăng ít nhất 10K
     maxHouses: 4,             // đủ 4 nhà mới được lên khách sạn
+    maxBuildsPerTurn: 2,      // mỗi lượt chỉ được xây tối đa 2 lần (nhà hoặc khách sạn)
     colourSetMultiplier: 2,   // có đủ bộ màu (chưa xây nhà) -> thuê gấp đôi
 };
 

@@ -72,6 +72,8 @@ function normalizeState(raw) {
     s.round = s.round || 1;
     s.doublesCount = s.doublesCount || 0;
     s.rolledDouble = !!s.rolledDouble;
+    s.hasRolled = !!s.hasRolled;
+    s.buildsThisTurn = s.buildsThisTurn || 0;
     s.lastCard = s.lastCard ?? null;
     s.lastMove = s.lastMove ?? null;
     s.winner = s.winner ?? null;
